@@ -12,6 +12,7 @@ import { Footer } from './components/Footer';
 import { ResumeModal } from './components/ResumeModal';
 import { EditProfileModal } from './components/EditProfileModal';
 import { Settings, FileText, RotateCcw } from 'lucide-react';
+import { safeStorage } from './utils/storage';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -67,16 +68,16 @@ class PortfolioErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundary
 
 export default function App() {
   const [portfolioData, setPortfolioData] = useState<PortfolioData>(() => {
-    try {
-      const saved = localStorage.getItem('nikhil_portfolio_data_v2');
-      if (saved) {
+    const saved = safeStorage.getItem('nikhil_portfolio_data_v2');
+    if (saved) {
+      try {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
           return { ...initialPortfolioData, ...parsed };
         }
+      } catch {
+        // Fallback
       }
-    } catch {
-      // Fallback
     }
     return initialPortfolioData;
   });
@@ -87,23 +88,15 @@ export default function App() {
   const handleSaveData = (updated: PortfolioData) => {
     const merged = { ...initialPortfolioData, ...updated };
     setPortfolioData(merged);
-    try {
-      localStorage.setItem('nikhil_portfolio_data_v2', JSON.stringify(merged));
-    } catch {
-      // ignore
-    }
+    safeStorage.setItem('nikhil_portfolio_data_v2', JSON.stringify(merged));
   };
 
   const handleResetData = () => {
     setPortfolioData(initialPortfolioData);
-    try {
-      localStorage.removeItem('nikhil_portfolio_data');
-      localStorage.removeItem('nikhil_portfolio_data_v2');
-      localStorage.removeItem('nikhil_repo_projects');
-      localStorage.removeItem('nikhil_fest_repo_only');
-    } catch {
-      // ignore
-    }
+    safeStorage.removeItem('nikhil_portfolio_data');
+    safeStorage.removeItem('nikhil_portfolio_data_v2');
+    safeStorage.removeItem('nikhil_repo_projects');
+    safeStorage.removeItem('nikhil_fest_repo_only');
   };
 
   return (

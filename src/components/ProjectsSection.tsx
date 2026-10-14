@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Project, projectsData } from '../data/portfolioData';
 import { Github, ExternalLink, Code2, ArrowUpRight, X, CheckCircle2, GitBranch, Star, RefreshCw, Plus, Trash2, Terminal, AlertCircle } from 'lucide-react';
 
+import { safeStorage } from '../utils/storage';
+
 interface ProjectsSectionProps {
   initialGithubUrl?: string;
 }
@@ -19,7 +21,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ initialGithubU
   };
 
   const [githubUsername, setGithubUsername] = useState<string>(() => {
-    return localStorage.getItem('nikhil_github_username') || extractHandle(initialGithubUrl);
+    return safeStorage.getItem('nikhil_github_username') || extractHandle(initialGithubUrl);
   });
 
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -28,16 +30,16 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ initialGithubU
 
   // Store repositories exclusively from the user (clearing out any legacy multi-project caches)
   const [repoProjects, setRepoProjects] = useState<Project[]>(() => {
-    try {
-      // Purge old 4 projects from previous sessions
-      localStorage.removeItem('nikhil_repo_projects');
-      const saved = localStorage.getItem('nikhil_fest_repo_only');
-      if (saved) {
+    // Purge old 4 projects from previous sessions
+    safeStorage.removeItem('nikhil_repo_projects');
+    const saved = safeStorage.getItem('nikhil_fest_repo_only');
+    if (saved) {
+      try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {
+        // ignore
       }
-    } catch {
-      // fallback
     }
     // Default repository project: Exclusively Atria Fest & Event Management System!
     return projectsData.map(p => ({
@@ -119,8 +121,8 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ initialGithubU
 
       setRepoProjects(mapped);
       setGithubUsername(cleanUsername);
-      localStorage.setItem('nikhil_github_username', cleanUsername);
-      localStorage.setItem('nikhil_repo_projects', JSON.stringify(mapped));
+      safeStorage.setItem('nikhil_github_username', cleanUsername);
+      safeStorage.setItem('nikhil_fest_repo_only', JSON.stringify(mapped));
       setSyncSuccess(`Successfully imported ${mapped.length} public repositories from @${cleanUsername}!`);
       setTimeout(() => setSyncSuccess(null), 4000);
 
@@ -154,7 +156,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ initialGithubU
 
     const updated = [newProject, ...repoProjects];
     setRepoProjects(updated);
-    localStorage.setItem('nikhil_fest_repo_only', JSON.stringify(updated));
+    safeStorage.setItem('nikhil_fest_repo_only', JSON.stringify(updated));
     setNewRepoTitle('');
     setNewRepoUrl('');
     setNewRepoDesc('');
@@ -165,11 +167,11 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ initialGithubU
     e.stopPropagation();
     const updated = repoProjects.filter(p => p.id !== id);
     setRepoProjects(updated);
-    localStorage.setItem('nikhil_fest_repo_only', JSON.stringify(updated));
+    safeStorage.setItem('nikhil_fest_repo_only', JSON.stringify(updated));
   };
 
   // Derive unique categories from active repositories
-  const allCategories = ['All', ...Array.from(new Set(repoProjects.map(p => p.category)))];
+  const allCategories = ['All', ...Array.from(new Set((repoProjects || []).map(p => p?.category || 'Other')))];
 
   const filteredProjects = activeCategory === 'All'
     ? repoProjects

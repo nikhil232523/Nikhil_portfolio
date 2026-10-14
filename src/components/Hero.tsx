@@ -58,11 +58,11 @@ export const Hero: React.FC<HeroProps> = ({ data, onOpenResume, onOpenContact })
               </a>
               <span aria-hidden="true" className="text-zinc-700">·</span>
               <a 
-                href={`tel:${data.phone.replace(/\s+/g, '')}`} 
+                href={`tel:${(data?.phone || '7204015416').replace(/\s+/g, '')}`} 
                 className="flex items-center gap-1.5 hover:text-cyan-300 transition-colors"
               >
                 <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{data.phone}</span>
+                <span>{data?.phone || '+91 7204015416'}</span>
               </a>
               <span aria-hidden="true" className="text-zinc-700">·</span>
               <span>DOB: 23 May 2005</span>

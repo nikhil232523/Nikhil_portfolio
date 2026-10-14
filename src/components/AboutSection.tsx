@@ -125,8 +125,8 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ data }) => {
                     <Phone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                     <div className="truncate">
                       <span className="text-zinc-500 block text-[11px]">Phone / Mobile</span>
-                      <a href={`tel:${data.phone.replace(/\s+/g, '')}`} className="text-zinc-200 hover:text-cyan-300 font-medium truncate block">
-                        {data.phone}
+                      <a href={`tel:${(data?.phone || '7204015416').replace(/\s+/g, '')}`} className="text-zinc-200 hover:text-cyan-300 font-medium truncate block">
+                        {data?.phone || '+91 7204015416'}
                       </a>
                     </div>
                   </div>

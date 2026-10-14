@@ -8,7 +8,8 @@ interface ProjectsSectionProps {
 
 export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ initialGithubUrl = 'https://github.com/nikhil-mk' }) => {
   // Extract handle from URL or default
-  const extractHandle = (url: string) => {
+  const extractHandle = (url?: string) => {
+    if (!url || typeof url !== 'string') return 'nikhil-mk';
     try {
       const parts = url.trim().replace(/\/$/, '').split('/');
       return parts[parts.length - 1] || 'nikhil-mk';
@@ -42,7 +43,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ initialGithubU
     return projectsData.map(p => ({
       ...p,
       isFromGitHub: true,
-      githubUrl: p.githubUrl.replace('nikhil-mk', extractHandle(initialGithubUrl))
+      githubUrl: (p.githubUrl || '').replace('nikhil-mk', extractHandle(initialGithubUrl))
     }));
   });
 

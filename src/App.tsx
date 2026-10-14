@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
 import { initialPortfolioData, PortfolioData } from './data/portfolioData';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -11,14 +11,69 @@ import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { ResumeModal } from './components/ResumeModal';
 import { EditProfileModal } from './components/EditProfileModal';
-import { Settings, FileText } from 'lucide-react';
+import { Settings, FileText, RotateCcw } from 'lucide-react';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  onReset: () => void;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class PortfolioErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Portfolio caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#08090d] text-zinc-100 flex items-center justify-center p-6 text-center">
+          <div className="max-w-md p-8 rounded-2xl bg-[#0c0e16] border border-zinc-800 shadow-2xl space-y-4">
+            <h2 className="text-xl font-bold text-white">Portfolio View Restored</h2>
+            <p className="text-sm text-zinc-400">
+              A temporary rendering issue occurred. Click below to reload your verified profile.
+            </p>
+            <button
+              onClick={() => {
+                this.props.onReset();
+                this.setState({ hasError: false });
+                window.location.reload();
+              }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-400 text-zinc-950 font-semibold text-xs hover:bg-cyan-300 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Reload Clean Profile</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [portfolioData, setPortfolioData] = useState<PortfolioData>(() => {
     try {
-      const saved = localStorage.getItem('nikhil_portfolio_data');
+      const saved = localStorage.getItem('nikhil_portfolio_data_v2');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return { ...initialPortfolioData, ...parsed };
+        }
       }
     } catch {
       // Fallback
@@ -30,9 +85,10 @@ export default function App() {
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleSaveData = (updated: PortfolioData) => {
-    setPortfolioData(updated);
+    const merged = { ...initialPortfolioData, ...updated };
+    setPortfolioData(merged);
     try {
-      localStorage.setItem('nikhil_portfolio_data', JSON.stringify(updated));
+      localStorage.setItem('nikhil_portfolio_data_v2', JSON.stringify(merged));
     } catch {
       // ignore
     }
@@ -42,96 +98,101 @@ export default function App() {
     setPortfolioData(initialPortfolioData);
     try {
       localStorage.removeItem('nikhil_portfolio_data');
+      localStorage.removeItem('nikhil_portfolio_data_v2');
+      localStorage.removeItem('nikhil_repo_projects');
+      localStorage.removeItem('nikhil_fest_repo_only');
     } catch {
       // ignore
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#08090d] text-zinc-100 flex flex-col selection:bg-cyan-500/25 selection:text-cyan-200">
-      
-      {/* 3-Zone Top Navigation */}
-      <Navbar
-        onOpenResume={() => setIsResumeOpen(true)}
-        onOpenCustomize={() => setIsEditOpen(true)}
-        phone={portfolioData.phone}
-        email={portfolioData.email}
-        linkedInUrl={portfolioData.linkedInUrl}
-      />
-
-      {/* Main Content Sections */}
-      <main className="flex-1">
-        {/* Split-Screen Hero */}
-        <Hero
-          data={portfolioData}
+    <PortfolioErrorBoundary onReset={handleResetData}>
+      <div className="min-h-screen bg-[#08090d] text-zinc-100 flex flex-col selection:bg-cyan-500/25 selection:text-cyan-200">
+        
+        {/* 3-Zone Top Navigation */}
+        <Navbar
           onOpenResume={() => setIsResumeOpen(true)}
-          onOpenContact={() => {
-            const el = document.getElementById('contact');
-            el?.scrollIntoView({ behavior: 'smooth' });
-          }}
+          onOpenCustomize={() => setIsEditOpen(true)}
+          phone={portfolioData.phone}
+          email={portfolioData.email}
+          linkedInUrl={portfolioData.linkedInUrl}
         />
 
-        {/* Candidate Profile & Facts */}
-        <AboutSection data={portfolioData} />
+        {/* Main Content Sections */}
+        <main className="flex-1">
+          {/* Split-Screen Hero */}
+          <Hero
+            data={portfolioData}
+            onOpenResume={() => setIsResumeOpen(true)}
+            onOpenContact={() => {
+              const el = document.getElementById('contact');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
 
-        {/* Skills & Interactive Workbench (SQL + DSA visualizer) */}
-        <SkillsSection />
+          {/* Candidate Profile & Facts */}
+          <AboutSection data={portfolioData} />
 
-        {/* Projects Sourced Exclusively from GitHub Repositories */}
-        <ProjectsSection initialGithubUrl={portfolioData.githubUrl} />
+          {/* Skills (4 Core Pillars) */}
+          <SkillsSection />
 
-        {/* Multilingual Competency Matrix */}
-        <LanguagesSection />
+          {/* Projects Sourced Exclusively from Verified Repository */}
+          <ProjectsSection initialGithubUrl={portfolioData.githubUrl} />
 
-        {/* Education Timeline & Certifications */}
-        <EducationSection />
+          {/* Multilingual Competency Matrix */}
+          <LanguagesSection />
 
-        {/* Working Contact & Mail Composer */}
-        <ContactSection data={portfolioData} />
-      </main>
+          {/* Education Timeline (Atria IT, CMR PU College, K.V. MEG Centre) */}
+          <EducationSection />
 
-      {/* Quiet Footer */}
-      <Footer
-        data={portfolioData}
-        onOpenResume={() => setIsResumeOpen(true)}
-        onOpenCustomize={() => setIsEditOpen(true)}
-      />
+          {/* Working Contact & Mail Composer */}
+          <ContactSection data={portfolioData} />
+        </main>
 
-      {/* Interactive Modals */}
-      <ResumeModal
-        isOpen={isResumeOpen}
-        onClose={() => setIsResumeOpen(false)}
-        data={portfolioData}
-      />
+        {/* Quiet Footer */}
+        <Footer
+          data={portfolioData}
+          onOpenResume={() => setIsResumeOpen(true)}
+          onOpenCustomize={() => setIsEditOpen(true)}
+        />
 
-      <EditProfileModal
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        data={portfolioData}
-        onSave={handleSaveData}
-        onReset={handleResetData}
-      />
+        {/* Interactive Modals */}
+        <ResumeModal
+          isOpen={isResumeOpen}
+          onClose={() => setIsResumeOpen(false)}
+          data={portfolioData}
+        />
 
-      {/* Floating Fast-Access Pill */}
-      <div className="fixed bottom-5 right-5 z-30 flex items-center gap-2">
-        <button
-          onClick={() => setIsResumeOpen(true)}
-          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-900/90 text-xs font-semibold text-zinc-200 hover:text-white border border-zinc-800 backdrop-blur-md shadow-lg hover:border-zinc-700 transition-colors"
-          title="Quick View Resume"
-        >
-          <FileText className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Resume</span>
-        </button>
-        <button
-          onClick={() => setIsEditOpen(true)}
-          className="p-2.5 rounded-lg bg-zinc-900/90 text-zinc-400 hover:text-cyan-400 border border-zinc-800 backdrop-blur-md shadow-lg hover:border-zinc-700 transition-colors"
-          title="Customize Profile & Links"
-          aria-label="Customize profile links"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
+        <EditProfileModal
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          data={portfolioData}
+          onSave={handleSaveData}
+          onReset={handleResetData}
+        />
+
+        {/* Floating Fast-Access Controls */}
+        <div className="fixed bottom-5 right-5 z-30 flex items-center gap-2">
+          <button
+            onClick={() => setIsResumeOpen(true)}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-900/90 text-xs font-semibold text-zinc-200 hover:text-white border border-zinc-800 backdrop-blur-md shadow-lg hover:border-zinc-700 transition-colors"
+            title="Quick View Resume"
+          >
+            <FileText className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Resume</span>
+          </button>
+          <button
+            onClick={() => setIsEditOpen(true)}
+            className="p-2.5 rounded-lg bg-zinc-900/90 text-zinc-400 hover:text-cyan-400 border border-zinc-800 backdrop-blur-md shadow-lg hover:border-zinc-700 transition-colors"
+            title="Customize Profile & Links"
+            aria-label="Customize profile links"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+        </div>
+
       </div>
-
-    </div>
+    </PortfolioErrorBoundary>
   );
 }

@@ -69,7 +69,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ data }) => {
 
             {/* Mobile / Phone Card */}
             <a
-              href={`tel:${data.phone.replace(/\s+/g, '')}`}
+              href={`tel:${(data?.phone || '7204015416').replace(/\s+/g, '')}`}
               className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 hover:border-emerald-500/40 transition-colors flex items-start gap-4 block group"
             >
               <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">

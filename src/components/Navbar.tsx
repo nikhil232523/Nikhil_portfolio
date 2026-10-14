@@ -129,11 +129,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>View LinkedIn Profile</span>
             </a>
             <a
-              href={`tel:${phone.replace(/\s+/g, '')}`}
+              href={`tel:${(phone || '7204015416').replace(/\s+/g, '')}`}
               className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:text-white"
             >
               <PhoneCall className="w-4 h-4 text-emerald-400" />
-              <span>{phone}</span>
+              <span>{phone || '+91 7204015416'}</span>
             </a>
             <button
               onClick={() => {
